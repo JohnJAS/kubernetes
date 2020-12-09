@@ -20,14 +20,13 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/component-base/featuregate"
-	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/defaultpreemption"
-
-	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	featuregatetesting "k8s.io/component-base/featuregate/testing"
 	"k8s.io/kubernetes/pkg/features"
 	schedulerapi "k8s.io/kubernetes/pkg/scheduler/apis/config"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/defaultbinder"
+	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/defaultpreemption"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/imagelocality"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/interpodaffinity"
 	"k8s.io/kubernetes/pkg/scheduler/framework/plugins/nodeaffinity"
@@ -91,7 +90,7 @@ func TestClusterAutoscalerProvider(t *testing.T) {
 				{Name: interpodaffinity.Name},
 				{Name: podtopologyspread.Name},
 				{Name: tainttoleration.Name},
-				{Name: selectorspread.Name},
+				{Name: nodeaffinity.Name},
 			},
 		},
 		Score: &schedulerapi.PluginSet{
@@ -104,7 +103,6 @@ func TestClusterAutoscalerProvider(t *testing.T) {
 				{Name: nodepreferavoidpods.Name, Weight: 10000},
 				{Name: podtopologyspread.Name, Weight: 2},
 				{Name: tainttoleration.Name, Weight: 1},
-				{Name: selectorspread.Name, Weight: 1},
 			},
 		},
 		Reserve: &schedulerapi.PluginSet{
@@ -134,7 +132,7 @@ func TestClusterAutoscalerProvider(t *testing.T) {
 func TestApplyFeatureGates(t *testing.T) {
 	tests := []struct {
 		name       string
-		feature    featuregate.Feature
+		features   map[featuregate.Feature]bool
 		wantConfig *schedulerapi.Plugins
 	}{
 		{
@@ -183,7 +181,7 @@ func TestApplyFeatureGates(t *testing.T) {
 						{Name: interpodaffinity.Name},
 						{Name: podtopologyspread.Name},
 						{Name: tainttoleration.Name},
-						{Name: selectorspread.Name},
+						{Name: nodeaffinity.Name},
 					},
 				},
 				Score: &schedulerapi.PluginSet{
@@ -196,7 +194,6 @@ func TestApplyFeatureGates(t *testing.T) {
 						{Name: nodepreferavoidpods.Name, Weight: 10000},
 						{Name: podtopologyspread.Name, Weight: 2},
 						{Name: tainttoleration.Name, Weight: 1},
-						{Name: selectorspread.Name, Weight: 1},
 					},
 				},
 				Reserve: &schedulerapi.PluginSet{
@@ -217,8 +214,10 @@ func TestApplyFeatureGates(t *testing.T) {
 			},
 		},
 		{
-			name:    "NewDefaultPodTopologySpread enabled",
-			feature: features.DefaultPodTopologySpread,
+			name: "DefaultPodTopologySpread disabled",
+			features: map[featuregate.Feature]bool{
+				features.DefaultPodTopologySpread: false,
+			},
 			wantConfig: &schedulerapi.Plugins{
 				QueueSort: &schedulerapi.PluginSet{
 					Enabled: []schedulerapi.Plugin{
@@ -263,6 +262,8 @@ func TestApplyFeatureGates(t *testing.T) {
 						{Name: interpodaffinity.Name},
 						{Name: podtopologyspread.Name},
 						{Name: tainttoleration.Name},
+						{Name: nodeaffinity.Name},
+						{Name: selectorspread.Name},
 					},
 				},
 				Score: &schedulerapi.PluginSet{
@@ -275,6 +276,7 @@ func TestApplyFeatureGates(t *testing.T) {
 						{Name: nodepreferavoidpods.Name, Weight: 10000},
 						{Name: podtopologyspread.Name, Weight: 2},
 						{Name: tainttoleration.Name, Weight: 1},
+						{Name: selectorspread.Name, Weight: 1},
 					},
 				},
 				Reserve: &schedulerapi.PluginSet{
@@ -298,8 +300,8 @@ func TestApplyFeatureGates(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if test.feature != "" {
-				defer featuregatetesting.SetFeatureGateDuringTest(t, utilfeature.DefaultFeatureGate, test.feature, true)()
+			for k, v := range test.features {
+				defer featuregatetesting.SetFeatureGateDuringTest(t, feature.DefaultFeatureGate, k, v)()
 			}
 
 			r := NewRegistry()

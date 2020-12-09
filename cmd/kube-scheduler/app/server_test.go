@@ -186,7 +186,7 @@ profiles:
 			{Name: "InterPodAffinity"},
 			{Name: "PodTopologySpread"},
 			{Name: "TaintToleration"},
-			{Name: "SelectorSpread"},
+			{Name: "NodeAffinity"},
 		},
 		"ScorePlugin": {
 			{Name: "NodeResourcesBalancedAllocation", Weight: 1},
@@ -197,7 +197,6 @@ profiles:
 			{Name: "NodePreferAvoidPods", Weight: 10000},
 			{Name: "PodTopologySpread", Weight: 2},
 			{Name: "TaintToleration", Weight: 1},
-			{Name: "SelectorSpread", Weight: 1},
 		},
 		"BindPlugin":    {{Name: "DefaultBinder"}},
 		"ReservePlugin": {{Name: "VolumeBinding"}},
@@ -316,7 +315,7 @@ profiles:
 						{Name: "InterPodAffinity"},
 						{Name: "PodTopologySpread"},
 						{Name: "TaintToleration"},
-						{Name: "SelectorSpread"},
+						{Name: "NodeAffinity"},
 					},
 					"ScorePlugin": {
 						{Name: "NodeResourcesBalancedAllocation", Weight: 1},
@@ -327,7 +326,6 @@ profiles:
 						{Name: "NodePreferAvoidPods", Weight: 10000},
 						{Name: "PodTopologySpread", Weight: 2},
 						{Name: "TaintToleration", Weight: 1},
-						{Name: "SelectorSpread", Weight: 1},
 					},
 					"BindPlugin":    {{Name: "DefaultBinder"}},
 					"ReservePlugin": {{Name: "VolumeBinding"}},
@@ -352,6 +350,7 @@ profiles:
 						{Name: "TaintToleration"},
 						{Name: "InterPodAffinity"},
 					},
+					"PostFilterPlugin": {{Name: "DefaultPreemption"}},
 					"PreScorePlugin": {
 						{Name: "InterPodAffinity"},
 					},
